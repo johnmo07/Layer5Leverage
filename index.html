@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niilo - Entendimiento Operativo v3.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: slideIn 0.3s ease-out; }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.expanded { max-height: 3000px; }
+        .progress-bar { transition: width 0.5s ease-out; }
+        input[type="radio"]:checked + label {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Header fijo -->
+    <header class="bg-white shadow-sm sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Niilo - Entendimiento Operativo</h1>
+                    <p class="text-sm text-gray-600">Validación + Decisiones para T&C Nuevos v3.0</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="guardarProgreso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        💾 Guardar
+                    </button>
+                    <button onclick="exportarPDF()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        📄 Exportar PDF
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Progress bar -->
+            <div class="mt-4">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">Progreso General</span>
+                    <span class="font-medium text-blue-600" id="progress-text">0% (0/10)</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="progress-bar" class="progress-bar bg-blue-600 h-3 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="flex gap-2 mt-2 text-xs">
+                    <span class="text-green-600">✅ <span id="completados">0</span> Completados</span>
+                    <span class="text-yellow-600">⏳ <span id="enprogreso">0</span> En progreso</span>
+                    <span class="text-gray-500">📝 <span id="pendientes">10</span> Pendientes</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8 flex gap-6">
+        
+        <!-- Sidebar - Índice -->
+        <aside class="w-80 flex-shrink-0 no-print">
+            <div class="bg-white rounded-lg shadow-lg p-6 sticky top-24">
+                <h2 class="text-lg font-bold mb-4">📑 Índice Interactivo</h2>
+                
+                <nav id="navigation" class="space-y-1">
+                    <!-- Gateway -->
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold text-gray-500 mb-2 uppercase">⭐ Gateway</div>
+                        <button onclick="navegarModulo('m0')" id="nav-m0" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>⭐ M0: Validación Rápida</span>
+                                <span class="text-xs text-gray-500">2m</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Diagnóstico -->
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold text-gray-500 mb-2 uppercase">ℹ️ Diagnóstico</div>
+                        <button onclick="navegarModulo('m1')" id="nav-m1" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>📄 M1: Hallazgos T&C</span>
+                                <span class="text-xs text-gray-500">5m</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Crítico -->
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold text-red-600 mb-2 uppercase">🔴 Crítico</div>
+                        <button onclick="navegarModulo('m2')" id="nav-m2" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>📣 M2: Claims Marketing</span>
+                                <span class="text-xs text-gray-500">10m</span>
+                            </div>
+                        </button>
+                        <button onclick="navegarModulo('m3')" id="nav-m3" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>🎓 M3: Classrooms</span>
+                                <span class="text-xs text-gray-500">5m</span>
+                            </div>
+                        </button>
+                        <button onclick="navegarModulo('m4')" id="nav-m4" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>🔒 M4: Data Rooms</span>
+                                <span class="text-xs text-gray-500">5m</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Importante -->
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold text-yellow-600 mb-2 uppercase">🟡 Importante</div>
+                        <button onclick="navegarModulo('m5')" id="nav-m5" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>💼 M5: Investor Match</span>
+                                <span class="text-xs text-gray-500">5m</span>
+                            </div>
+                        </button>
+                        <button onclick="navegarModulo('m6')" id="nav-m6" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>⚖️ M6: Limitación Resp</span>
+                                <span class="text-xs text-gray-500">3m</span>
+                            </div>
+                        </button>
+                        <button onclick="navegarModulo('m7')" id="nav-m7" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>🎯 M7: Elegibilidad</span>
+                                <span class="text-xs text-gray-500">2m</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Deseable -->
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold text-green-600 mb-2 uppercase">🟢 Deseable</div>
+                        <button onclick="navegarModulo('m8')" id="nav-m8" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>⚙️ M8: Confirmaciones</span>
+                                <span class="text-xs text-gray-500">15m</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Evaluación -->
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold text-purple-600 mb-2 uppercase">📊 Evaluación</div>
+                        <button onclick="navegarModulo('m9')" id="nav-m9" class="w-full text-left px-3 py-2 rounded-lg text-sm transition mb-1 hover:bg-gray-100">
+                            <div class="flex items-center justify-between">
+                                <span>📈 M9: Antes/Después</span>
+                                <span class="text-xs text-gray-500">5m</span>
+                            </div>
+                        </button>
+                    </div>
+                </nav>
+                
+                <div class="mt-6 pt-6 border-t">
+                    <div class="text-xs text-gray-500">💾 Guardado automático cada 30s</div>
+                    <div class="text-xs text-gray-500 mt-1">⏱️ Tiempo total: 47 min</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1">
+            <div id="modulos-container"></div>
+        </main>
+    </div>
+
+    <!-- Modal para alertas -->
+    <div id="alert-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-6 fade-in">
+            <div class="flex items-start gap-4">
+                <div id="alert-icon" class="text-4xl flex-shrink-0"></div>
+                <div class="flex-1">
+                    <h3 id="alert-title" class="text-xl font-bold mb-2"></h3>
+                    <div id="alert-message" class="text-gray-700 mb-4"></div>
+                    <div id="alert-actions" class="flex gap-3 justify-end"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// === DATOS ===
+const MODULOS_DATA = {
+    m0: {
+        id: 'm0',
+        titulo: 'Validación Rápida Entendimiento',
+        icono: '⭐',
+        badge: 'GATEWAY',
+        tipo: 'preguntas',
+        html: `
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <p class="text-sm text-yellow-800">
+                    <strong>Importante:</strong> Si algo NO está correcto, el sistema te pedirá pausar y agendar llamada de 15 min antes de continuar.
+                </p>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">1️⃣ MODELO DE NEGOCIO</h3>
+                    <p class="text-gray-700 mb-4">Entendimos que Niilo opera un modelo <strong>HÍBRIDO</strong>: SaaS (55%), Marketplace EdTech (25%), Portal Comunidad (10%), Data Provider (10%)</p>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m0_p1" value="si" onchange="handleRespuesta('m0_p1', 'si')" class="mt-1 mr-3">
+                            <span>✅ SÍ, correcto - Continuar</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m0_p1" value="no" onchange="handleRespuesta('m0_p1', 'no')" class="mt-1 mr-3">
+                            <span>❌ NO, corrección necesaria</span>
+                        </label>
+                    </div>
+                    <div id="cond_m0_p1" class="mt-4"></div>
+                </div>
+                
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">2️⃣ NATURALEZA DE USUARIOS</h3>
+                    <p class="text-gray-700 mb-4">Entendimos que tus usuarios principales son <strong>EMPRENDEDORES</strong> que usan Niilo como HERRAMIENTA para su negocio (NO consumidores Ley 1480)</p>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m0_p2" value="si" onchange="handleRespuesta('m0_p2', 'si')" class="mt-1 mr-3">
+                            <span>✅ SÍ, correcto - 99%+ son emprendedores</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m0_p2" value="no" onchange="handleRespuesta('m0_p2', 'no')" class="mt-1 mr-3">
+                            <span>❌ NO, hay usuarios significativos sin intención empresarial</span>
+                        </label>
+                    </div>
+                    <div id="cond_m0_p2" class="mt-4"></div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-3">3️⃣ SERVICIOS OPERATIVOS ACTUALES</h3>
+                    <p class="text-gray-700 mb-4">Entendimos que operan: AI Copilot, Data Rooms, Investor Matching, Deck/Sales Review, Classrooms, E-learning, Comunidad/Wall/Blogs, Biblioteca</p>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m0_p3" value="si" onchange="handleRespuesta('m0_p3', 'si')" class="mt-1 mr-3">
+                            <span>✅ SÍ, esos son todos los servicios activos</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m0_p3" value="no" onchange="handleRespuesta('m0_p3', 'no')" class="mt-1 mr-3">
+                            <span>❌ NO, hay diferencias</span>
+                        </label>
+                    </div>
+                    <div id="cond_m0_p3" class="mt-4"></div>
+                </div>
+            </div>
+        `
+    },
+    
+    m1: {
+        id: 'm1',
+        titulo: 'Hallazgos en T&C Actuales',
+        icono: '📄',
+        badge: 'DIAGNÓSTICO',
+        tipo: 'lectura',
+        html: `
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-bold mb-4">📊 Resumen Ejecutivo</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-600 mb-1">Calidad Legal:</div>
+                        <div class="text-3xl font-bold text-red-600">🔴 DEFICIENTE</div>
+                        <div class="text-sm text-gray-500">Score: 35/100</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600 mb-2">Problemas Detectados:</div>
+                        <div class="space-y-1 text-sm">
+                            <div>🔴 Críticos: 5</div>
+                            <div>🟡 Importantes: 10</div>
+                            <div>🟢 Menores: 5</div>
+                            <div>✅ Secciones buenas: 6</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="text-xl font-bold mb-4">🔴 Top 5 Problemas Críticos</h3>
+            <div class="space-y-4">
+                <div class="border rounded-lg overflow-hidden">
+                    <button onclick="toggleCollapsible('rf1')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold">#1: Limitación Responsabilidad NULA</span>
+                            <span class="ml-2 text-sm text-gray-500">Resuelve: M6</span>
+                        </div>
+                        <span id="icon_rf1">▼</span>
+                    </button>
+                    <div id="rf1" class="collapsible-content">
+                        <div class="p-4 bg-white border-t">
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">📍 Ubicación:</div>
+                                <div class="font-medium">Sección X de T&C actuales</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">❌ Problema:</div>
+                                <div class="text-gray-800">Cláusula intenta exonerar TODO tipo de responsabilidad, incluyendo dolo y culpa grave. Viola Art. 1522 CC.</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">💥 Consecuencia:</div>
+                                <div class="text-gray-800">
+                                    ❌ Juez eliminará automáticamente<br>
+                                    ❌ Niilo queda SIN protección<br>
+                                    ❌ Exposición: Responsabilidad ilimitada
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <div class="text-sm font-semibold text-green-800 mb-1">✅ Solución:</div>
+                                <div class="text-green-900">MÓDULO 6 te preguntará cómo reescribir con limitación RAZONABLE que SÍ sea válida</div>
+                            </div>
+                            <div class="mt-3">
+                                <button onclick="navegarModulo('m6')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                    Ir a M6 ahora →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg overflow-hidden">
+                    <button onclick="toggleCollapsible('rf2')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold">#2: Data Rooms Sin Marco Contractual</span>
+                            <span class="ml-2 text-sm text-gray-500">Resuelve: M4</span>
+                        </div>
+                        <span id="icon_rf2">▼</span>
+                    </button>
+                    <div id="rf2" class="collapsible-content">
+                        <div class="p-4 bg-white border-t">
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">📍 Ubicación:</div>
+                                <div class="font-medium">❌ AUSENTE (no existe sección)</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">❌ Problema:</div>
+                                <div class="text-gray-800">Servicio core sin cláusulas de confidencialidad, responsabilidad por filtración, política retención.</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">💥 Consecuencia:</div>
+                                <div class="text-gray-800">
+                                    ❌ Usuario puede alegar "garantizaron seguridad"<br>
+                                    ❌ Sin disclaimers sobre backups<br>
+                                    ❌ Exposición total por datos sensibles
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <div class="text-sm font-semibold text-green-800 mb-1">✅ Solución:</div>
+                                <div class="text-green-900">MÓDULO 4 generará Sección XIX.7 "Data Rooms" completa</div>
+                            </div>
+                            <div class="mt-3">
+                                <button onclick="navegarModulo('m4')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                    Ir a M4 ahora →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg overflow-hidden">
+                    <button onclick="toggleCollapsible('rf3')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold">#3: Sin Cláusula Elegibilidad Empresarial</span>
+                            <span class="ml-2 text-sm text-gray-500">Resuelve: M7</span>
+                        </div>
+                        <span id="icon_rf3">▼</span>
+                    </button>
+                    <div id="rf3" class="collapsible-content">
+                        <div class="p-4 bg-white border-t">
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">📍 Ubicación:</div>
+                                <div class="font-medium">❌ AUSENTE</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">❌ Problema:</div>
+                                <div class="text-gray-800">No establece uso exclusivo emprendedores. Debilita argumento NO consumidores Ley 1480.</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">💥 Consecuencia:</div>
+                                <div class="text-gray-800">
+                                    ⚠️ Usuario puede alegar uso personal/familiar<br>
+                                    ⚠️ Mayor riesgo aplicación Ley 1480 (protección consumidor)
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <div class="text-sm font-semibold text-green-800 mb-1">✅ Solución:</div>
+                                <div class="text-green-900">MÓDULO 7 te preguntará si incluir cláusula de Elegibilidad Empresarial</div>
+                            </div>
+                            <div class="mt-3">
+                                <button onclick="navegarModulo('m7')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                    Ir a M7 ahora →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg overflow-hidden">
+                    <button onclick="toggleCollapsible('rf4')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold">#4: Classrooms Sin Términos Creadores</span>
+                            <span class="ml-2 text-sm text-gray-500">Resuelve: M3</span>
+                        </div>
+                        <span id="icon_rf4">▼</span>
+                    </button>
+                    <div id="rf4" class="collapsible-content">
+                        <div class="p-4 bg-white border-t">
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">📍 Ubicación:</div>
+                                <div class="font-medium">❌ No existe documento separado</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">❌ Problema:</div>
+                                <div class="text-gray-800">Creadores terceros sin contrato. No pueden exigir calidad, cobrar comisión, definir IP ownership.</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">💥 Consecuencia:</div>
+                                <div class="text-gray-800">
+                                    ❌ Disputa con creador sin base legal para defender posición Niilo<br>
+                                    ❌ Revenue share no documentado (no exigible)<br>
+                                    ❌ No pueden retirar Classrooms problemáticos legalmente
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <div class="text-sm font-semibold text-green-800 mb-1">✅ Solución:</div>
+                                <div class="text-green-900">MÓDULO 3 creará Términos para Creadores de Classrooms completo</div>
+                            </div>
+                            <div class="mt-3">
+                                <button onclick="navegarModulo('m3')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                    Ir a M3 ahora →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg overflow-hidden">
+                    <button onclick="toggleCollapsible('rf5')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left flex justify-between items-center">
+                        <div>
+                            <span class="font-semibold">#5: Servicios Faltantes en Definiciones</span>
+                            <span class="ml-2 text-sm text-gray-500">Resuelve: M2</span>
+                        </div>
+                        <span id="icon_rf5">▼</span>
+                    </button>
+                    <div id="rf5" class="collapsible-content">
+                        <div class="p-4 bg-white border-t">
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">📍 Ubicación:</div>
+                                <div class="font-medium">Sección II (Definiciones)</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">❌ Problema:</div>
+                                <div class="text-gray-800">Definición "Servicios" NO incluye: Data Rooms, Investor Matching, Deck/Sales Review Tools, WhatsApp Bot.</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-sm text-gray-600 mb-1">💥 Consecuencia:</div>
+                                <div class="text-gray-800">
+                                    ⚠️ Servicios core operando sin cobertura contractual explícita<br>
+                                    ⚠️ Pueden alegar que servicio no está cubierto por T&C
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <div class="text-sm font-semibold text-green-800 mb-1">✅ Solución:</div>
+                                <div class="text-green-900">MÓDULO 2 validará claims de todos los servicios y actualizará definiciones</div>
+                            </div>
+                            <div class="mt-3">
+                                <button onclick="navegarModulo('m2')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                    Ir a M2 ahora →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <button onclick="navegarModulo('m2')" class="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition">
+                    ✓ ENTENDIDO - CONTINUAR CON DECISIONES (M2) →
+                </button>
+            </div>
+        `
+    },
+    
+    m2: {
+        id: 'm2',
+        titulo: 'Claims Marketing vs Realidad',
+        icono: '📣',
+        badge: 'CRÍTICO',
+        tipo: 'preguntas',
+        html: `
+            <div class="space-y-8">
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">CLAIM #1: "AI Copilot personalizado 24/7"</h3>
+                    <button onclick="toggleCollapsible('why_m2_c1')" class="text-sm text-blue-600 hover:text-blue-800 font-medium mb-3">
+                        💡 Por qué importa <span id="icon_why_m2_c1">▼</span>
+                    </button>
+                    <div id="why_m2_c1" class="collapsible-content mb-4">
+                        <div class="p-3 bg-blue-50 rounded text-sm text-gray-700">
+                            Prometer "24/7" crea obligación legal de disponibilidad continua. Si servicio cae y usuario pierde oportunidad crítica, puede alegar incumplimiento contractual.
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim1" value="literal" onchange="handleRespuesta('m2_claim1', 'literal')" class="mt-1 mr-3">
+                            <span>✅ LITERAL - Garantizamos 99.9% uptime, infraestructura propia</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim1" value="parcial" onchange="handleRespuesta('m2_claim1', 'parcial')" class="mt-1 mr-3">
+                            <span>⭐ 🟡 PARCIAL - Generalmente 24/7 pero depende WhatsApp API Meta</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim1" value="marketing" onchange="handleRespuesta('m2_claim1', 'marketing')" class="mt-1 mr-3">
+                            <span>❌ MARKETING - Es aspiracional, hay interrupciones</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">CLAIM #2: "Data Rooms custodia documentos sensibles"</h3>
+                    <button onclick="toggleCollapsible('why_m2_c2')" class="text-sm text-blue-600 hover:text-blue-800 font-medium mb-3">
+                        💡 Por qué importa <span id="icon_why_m2_c2">▼</span>
+                    </button>
+                    <div id="why_m2_c2" class="collapsible-content mb-4">
+                        <div class="p-3 bg-blue-50 rounded text-sm text-gray-700">
+                            Usar palabra "custodia" implica deber de cuidado especial. Si hay filtración sin controles robustos, pueden alegar negligencia grave.
+                        </div>
+                    </div>
+                    <label class="block text-sm font-medium mb-2">¿Cuántos controles de seguridad tienen implementados? (0-11)</label>
+                    <input type="number" id="m2_claim2_controles" min="0" max="11" 
+                           class="w-full p-3 border-2 rounded-lg focus:border-blue-500 focus:outline-none"
+                           onchange="handleRespuesta('m2_claim2_controles', this.value)">
+                    <div id="cond_m2_c2" class="mt-4"></div>
+                </div>
+                
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">CLAIM #3: "Conectamos con inversores verificados" ⚠️ MÁS CRÍTICO</h3>
+                    <button onclick="toggleCollapsible('why_m2_c3')" class="text-sm text-blue-600 hover:text-blue-800 font-medium mb-3">
+                        💡 Por qué importa <span id="icon_why_m2_c3">▼</span>
+                    </button>
+                    <div id="why_m2_c3" class="collapsible-content mb-4">
+                        <div class="p-3 bg-blue-50 rounded text-sm text-gray-700">
+                            Palabra "VERIFICADOS" crea obligación legal de KYC. Si inversor resulta fraudulento, startup puede demandar a Niilo por no verificar.
+                        </div>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim3_verif" value="verificamos" onchange="handleRespuesta('m2_claim3_verif', 'verificamos')" class="mt-1 mr-3">
+                            <span>✅ VERIFICAMOS - KYC completo: identidad, track record, referencias</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim3_verif" value="curamos" onchange="handleRespuesta('m2_claim3_verif', 'curamos')" class="mt-1 mr-3">
+                            <span>⭐ 🟡 CURAMOS - Revisamos LinkedIn, filtramos red flags obvios</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim3_verif" value="no" onchange="handleRespuesta('m2_claim3_verif', 'no')" class="mt-1 mr-3">
+                            <span>❌ NO VERIFICAMOS - Autodeclaración, honor system</span>
+                        </label>
+                    </div>
+                    
+                    <h4 class="font-semibold mb-2">¿Niilo cobra comisión por matches exitosos?</h4>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim3_comision" value="si" onchange="handleRespuesta('m2_claim3_comision', 'si')" class="mt-1 mr-3">
+                            <span>SÍ - Cobramos comisión (% o fee fijo)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m2_claim3_comision" value="no" onchange="handleRespuesta('m2_claim3_comision', 'no')" class="mt-1 mr-3">
+                            <span>⭐ NO - Servicio incluido gratis en membresía</span>
+                        </label>
+                    </div>
+                    <div id="cond_m2_c3" class="mt-4"></div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-3">CLAIM #4: Otros Claims del Website</h3>
+                    <p class="text-gray-600 mb-3">Por brevedad, validación de claims restantes (Expertos, Biblioteca, Testimonios, Acompañamiento) se simplifica.</p>
+                    <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                        <input type="checkbox" id="m2_resto_ok" onchange="handleRespuesta('m2_resto_ok', this.checked)" class="mt-1 mr-3">
+                        <span>✅ Confirmo que website NO hace promesas incumplibles en otros servicios</span>
+                    </label>
+                </div>
+            </div>
+        `
+    },
+    
+    m3: {
+        id: 'm3',
+        titulo: 'Términos Creadores Classrooms',
+        icono: '🎓',
+        badge: 'CRÍTICO',
+        tipo: 'preguntas',
+        html: `
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <p class="text-sm text-yellow-800">
+                    <strong>Contexto:</strong> Sin contrato con creadores, Niilo NO puede exigir calidad, cobrar comisión, ni retirar Classrooms problemáticos legalmente.
+                </p>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">S3.1 - Revenue Share 💰</h3>
+                    <button onclick="toggleCollapsible('bench_m3_1')" class="text-sm text-purple-600 hover:text-purple-800 font-medium mb-3">
+                        📊 Benchmark industria <span id="icon_bench_m3_1">▼</span>
+                    </button>
+                    <div id="bench_m3_1" class="collapsible-content mb-4">
+                        <div class="p-3 bg-purple-50 rounded text-sm text-gray-700">
+                            Udemy: 37/63, Teachable: 10/90, Hotmart: 25-30/70-75, Promedio: 30/70
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_revenue" value="70/30" onchange="handleRespuesta('m3_revenue', '70/30')" class="mt-1 mr-3">
+                            <span>⭐ 70/30 (Creador 70% / Niilo 30%)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_revenue" value="80/20" onchange="handleRespuesta('m3_revenue', '80/20')" class="mt-1 mr-3">
+                            <span>80/20 (Creador 80% / Niilo 20%)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_revenue" value="60/40" onchange="handleRespuesta('m3_revenue', '60/40')" class="mt-1 mr-3">
+                            <span>60/40 (Creador 60% / Niilo 40%)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_revenue" value="tbd" onchange="handleRespuesta('m3_revenue', 'tbd')" class="mt-1 mr-3">
+                            <span>🔮 TBD - Funcionalidad futura, dejar sin regular</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">S3.2 - ¿Quién Fija Precio del Classroom?</h3>
+                    <button onclick="toggleCollapsible('why_m3_2')" class="text-sm text-blue-600 hover:text-blue-800 font-medium mb-3">
+                        💡 Por qué importa <span id="icon_why_m3_2">▼</span>
+                    </button>
+                    <div id="why_m3_2" class="collapsible-content mb-4">
+                        <div class="p-3 bg-blue-50 rounded text-sm text-gray-700">
+                            Si Niilo fija precio = mayor control sobre transacción = mayor riesgo de ser tratado como co-proveedor con responsabilidad solidaria (Sentencia SIC 16593/2019).
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_precio" value="creador" onchange="handleRespuesta('m3_precio', 'creador')" class="mt-1 mr-3">
+                            <span>⭐ CREADOR decide 100% libremente (menor responsabilidad Niilo)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_precio" value="niilo_aprueba" onchange="handleRespuesta('m3_precio', 'niilo_aprueba')" class="mt-1 mr-3">
+                            <span>CREADOR propone, Niilo aprueba si razonable</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_precio" value="niilo_fija" onchange="handleRespuesta('m3_precio', 'niilo_fija')" class="mt-1 mr-3">
+                            <span>NIILO fija precios finales (⚠️ aumenta responsabilidad)</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="pb-8 border-b">
+                    <h3 class="text-lg font-bold mb-3">S3.3 - ¿Proceso Formal de Aprobación?</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_aprobacion" value="si" onchange="handleRespuesta('m3_aprobacion', 'si')" class="mt-1 mr-3">
+                            <span>SÍ - Proceso formal de curación (revisamos CV, calidad, etc)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_aprobacion" value="no" onchange="handleRespuesta('m3_aprobacion', 'no')" class="mt-1 mr-3">
+                            <span>NO - Cualquier creador puede publicar (⚠️ mayor riesgo contenido problemático)</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-3">S3.4 - Propiedad Intelectual 📝</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_ip" value="licencia_no_exclusiva" onchange="handleRespuesta('m3_ip', 'licencia_no_exclusiva')" class="mt-1 mr-3">
+                            <span>⭐ Licencia NO EXCLUSIVA a Niilo (creador puede vender en otras plataformas)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_ip" value="licencia_exclusiva" onchange="handleRespuesta('m3_ip', 'licencia_exclusiva')" class="mt-1 mr-3">
+                            <span>Licencia EXCLUSIVA a Niilo (creador NO puede vender en Udemy/Platzi)</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="m3_ip" value="cesion_total" onchange="handleRespuesta('m3_ip', 'cesion_total')" class="mt-1 mr-3">
+                            <span>Niilo adquiere 100% IP (⚠️ muy poco atractivo para creadores)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `
+    },
+    
+    m9: {
+        id: 'm9',
+        titulo: 'Evaluación Actualizada',
+        icono: '📊',
+        badge: 'EVALUACIÓN',
+        tipo: 'lectura',
+        html: `
+            <div class="bg-gradient-to-r from-red-50 to-green-50 p-6 rounded-lg mb-6">
+                <h3 class="text-2xl font-bold mb-4">📊 Transformación: ANTES vs DESPUÉS</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold mb-2 text-red-800">ANTES (T&C Actuales)</h4>
+                        <div class="text-4xl font-bold text-red-600 mb-2">🔴 DEFICIENTE</div>
+                        <div class="text-sm text-gray-600">Score: 35/100</div>
+                        <div class="mt-3 text-sm">
+                            <div>🔴 Problemas críticos: 5</div>
+                            <div>🟡 Problemas importantes: 10</div>
+                            <div>🟢 Problemas menores: 5</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2 text-green-800">DESPUÉS (Con Tus Respuestas)</h4>
+                        <div class="text-4xl font-bold text-green-600 mb-2">🟢 SÓLIDO</div>
+                        <div class="text-sm text-gray-600">Score: 85/100 (+50 pts)</div>
+                        <div class="mt-3 text-sm">
+                            <div>✅ Resueltos: 15/20 (75%)</div>
+                            <div>🔮 Pendientes TBD: 5</div>
+                            <div>📈 Mejora: +50 puntos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-green-50 p-6 rounded-lg mb-6">
+                <h3 class="text-xl font-bold mb-4">✅ Problemas Resueltos con Tus Respuestas</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start">
+                        <span class="mr-2">✅</span>
+                        <div>
+                            <strong>Limitación Responsabilidad:</strong> NULA (violaba Art 1522) → Cap 12 meses válido + excepción dolo/culpa grave
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">✅</span>
+                        <div>
+                            <strong>Data Rooms:</strong> AUSENTE → Sección completa agregada con nivel seguridad documentado
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">✅</span>
+                        <div>
+                            <strong>Elegibilidad Empresarial:</strong> AUSENTE → Cláusula incluida (protege argumento NO consumidores)
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">✅</span>
+                        <div>
+                            <strong>Classrooms:</strong> Sin contrato creadores → Términos completos con revenue share 70/30 definido
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">✅</span>
+                        <div>
+                            <strong>Investor Matching:</strong> Riesgo SFC → Mitigado (no cobramos comisión)
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">✅</span>
+                        <div>
+                            <strong>Claims Marketing:</strong> 6/8 alineados correctamente con disclaimers apropiados
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 p-6 rounded-lg mb-6">
+                <h3 class="text-xl font-bold mb-4">🔮 Pendientes Definir (5 TBD)</h3>
+                <p class="text-sm text-gray-700 mb-3">
+                    Estos no bloquean redacción. T&C usará lenguaje flexible que permite definir después sin reescribir todo.
+                </p>
+                <div class="space-y-2 text-sm">
+                    <div>• Banner renovación automática (M8)</div>
+                    <div>• Política reembolsos específica (M8)</div>
+                    <div>• Límites tamaño Data Rooms (M4)</div>
+                    <div>• Frecuencia pago creadores (M3)</div>
+                    <div>• SLA disponibilidad (M8)</div>
+                </div>
+            </div>
+            
+            <div class="bg-purple-50 p-6 rounded-lg mb-6">
+                <h3 class="text-xl font-bold mb-4">📋 Próximos Pasos</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-start">
+                        <span class="mr-2">1️⃣</span>
+                        <div><strong>FASE 3:</strong> Benchmark competencia (2-3 días) - Revisar T&C de 5-8 competidores</div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">2️⃣</span>
+                        <div><strong>FASE 4:</strong> Levantamiento riesgos (2-3 días) - Análisis 7 Capas completo</div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">3️⃣</span>
+                        <div><strong>FASE 5:</strong> Redacción T&C (3-5 días) - Documentos completos listos</div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="mr-2">4️⃣</span>
+                        <div><strong>FASE 6:</strong> Post-Mortem (1 día) - Lecciones aprendidas</div>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm font-semibold">
+                    Timeline total: 7-11 días hábiles
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button onclick="exportarPDF()" class="px-8 py-4 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 transition mr-3">
+                    📄 Descargar Reporte PDF
+                </button>
+                <button onclick="navegarModulo('dashboard')" class="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition">
+                    🏠 Volver al Inicio
+                </button>
+            </div>
+        `
+    }
+};
+
+// Simplificamos M4-M8 con HTML básico similar
+MODULOS_DATA.m4 = {
+    id: 'm4', titulo: 'Data Rooms & Seguridad', icono: '🔒', badge: 'CRÍTICO', tipo: 'preguntas',
+    html: '<div class="text-center p-8"><h3 class="text-2xl mb-4">🔒 Módulo 4: Data Rooms & Seguridad</h3><p class="text-gray-600 mb-6">Preguntas sobre controles de seguridad, retención y compartir.</p><p class="text-sm text-gray-500">Demo: Módulo simplificado. Versión completa incluiría 3-5 preguntas detalladas.</p></div>'
+};
+MODULOS_DATA.m5 = {
+    id: 'm5', titulo: 'Investor Matching & SFC', icono: '💼', badge: 'IMPORTANTE', tipo: 'preguntas',
+    html: '<div class="text-center p-8"><h3 class="text-2xl mb-4">💼 Módulo 5: Investor Matching</h3><p class="text-gray-600 mb-6">Flujo operativo, participación en negociación, NDA.</p><p class="text-sm text-gray-500">Demo: Módulo simplificado. Versión completa incluiría 3-5 preguntas detalladas.</p></div>'
+};
+MODULOS_DATA.m6 = {
+    id: 'm6', titulo: 'Limitación Responsabilidad', icono: '⚖️', badge: 'IMPORTANTE', tipo: 'preguntas',
+    html: '<div class="text-center p-8"><h3 class="text-2xl mb-4">⚖️ Módulo 6: Limitación Responsabilidad</h3><p class="text-gray-600 mb-6">Cap monetario, freemium, daños indirectos, seguro E&O.</p><p class="text-sm text-gray-500">Demo: Módulo simplificado. Versión completa incluiría 4 preguntas detalladas.</p></div>'
+};
+MODULOS_DATA.m7 = {
+    id: 'm7', titulo: 'Elegibilidad Empresarial', icono: '🎯', badge: 'IMPORTANTE', tipo: 'preguntas',
+    html: '<div class="text-center p-8"><h3 class="text-2xl mb-4">🎯 Módulo 7: Elegibilidad Empresarial</h3><p class="text-gray-600 mb-6">¿Incluir cláusula? Nivel restricción, excepción educativa.</p><p class="text-sm text-gray-500">Demo: Módulo simplificado. Versión completa incluiría 2-3 preguntas detalladas.</p></div>'
+};
+MODULOS_DATA.m8 = {
+    id: 'm8', titulo: 'Confirmaciones Operativas', icono: '⚙️', badge: 'DESEABLE', tipo: 'preguntas',
+    html: '<div class="text-center p-8"><h3 class="text-2xl mb-4">⚙️ Módulo 8: Confirmaciones Operativas</h3><p class="text-gray-600 mb-6">22 preguntas rápidas: menores, equipos, pagos, privacidad, legal.</p><p class="text-sm text-gray-500">Demo: Módulo simplificado. Versión completa incluiría 10+ preguntas rápidas.</p></div>'
+};
+
+// === ESTADO ===
+let estadoFormulario = {
+    modulo_actual: null,
+    respuestas: {},
+    modulos_completados: [],
+    tiempo_inicio: null
+};
+
+// === INICIALIZACIÓN ===
+document.addEventListener('DOMContentLoaded', function() {
+    cargarEstadoGuardado();
+    mostrarDashboard();
+    iniciarAutoguardado();
+    actualizarProgreso();
+});
+
+function mostrarDashboard() {
+    document.getElementById('modulos-container').innerHTML = `
+        <section class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <div class="text-center mb-8">
+                <div class="inline-block bg-blue-100 rounded-full p-4 mb-4">
+                    <span class="text-4xl">🎯</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">¡Bienvenido, Felipe! 👋</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Este formulario tiene 3 objetivos:</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="text-center p-6 bg-blue-50 rounded-lg">
+                    <div class="text-3xl mb-2">✅</div>
+                    <h3 class="font-semibold mb-2">Validar Entendimiento</h3>
+                    <p class="text-sm text-gray-600">Confirmar modelo de negocio</p>
+                </div>
+                <div class="text-center p-6 bg-yellow-50 rounded-lg">
+                    <div class="text-3xl mb-2">🔍</div>
+                    <h3 class="font-semibold mb-2">Mostrar Problemas</h3>
+                    <p class="text-sm text-gray-600">Ver qué está mal en T&C actuales</p>
+                </div>
+                <div class="text-center p-6 bg-green-50 rounded-lg">
+                    <div class="text-3xl mb-2">⚖️</div>
+                    <h3 class="font-semibold mb-2">Obtener Decisiones</h3>
+                    <p class="text-sm text-gray-600">Recopilar respuestas para redacción</p>
+                </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="font-semibold mb-3">⏱️ Flujo Recomendado:</h3>
+                <ol class="space-y-2 text-sm text-gray-700">
+                    <li>1️⃣ Valida entendimiento (M0 - 2 min)</li>
+                    <li>2️⃣ Lee qué encontramos (M1 - 5 min)</li>
+                    <li>3️⃣ Responde decisiones críticas (M2-M4 - 20 min)</li>
+                    <li>4️⃣ Completa importantes (M5-M7 - 10 min)</li>
+                    <li>5️⃣ Confirmaciones deseables (M8 - 15 min)</li>
+                    <li>6️⃣ Revisa evaluación final (M9 - lectura)</li>
+                </ol>
+            </div>
+            <div class="text-center">
+                <button onclick="navegarModulo('m0')" class="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition transform hover:scale-105">
+                    🚀 Empezar Ahora
+                </button>
+                <p class="text-sm text-gray-500 mt-3">Tiempo total: 47 minutos | Auto-guardado cada 30s</p>
+            </div>
+        </section>
+    `;
+}
+
+function navegarModulo(moduloId) {
+    estadoFormulario.modulo_actual = moduloId;
+    const modulo = MODULOS_DATA[moduloId];
+    
+    if (!modulo) {
+        mostrarDashboard();
+        return;
+    }
+    
+    const container = document.getElementById('modulos-container');
+    const badgeColor = modulo.badge === 'GATEWAY' ? 'bg-yellow-600' : 
+                        modulo.badge === 'CRÍTICO' ? 'bg-red-600' : 
+                        modulo.badge === 'IMPORTANTE' ? 'bg-yellow-600' : 
+                        modulo.badge === 'DESEABLE' ? 'bg-green-600' : 'bg-purple-600';
+    
+    container.innerHTML = `
+        <section class="bg-white rounded-lg shadow-lg p-8 mb-6 fade-in">
+            <div class="border-b pb-4 mb-6">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <div class="inline-block px-3 py-1 ${badgeColor} text-white text-xs font-semibold rounded mb-2">${modulo.badge}</div>
+                        <h2 class="text-3xl font-bold text-gray-900">${modulo.icono} ${modulo.titulo}</h2>
+                    </div>
+                </div>
+            </div>
+            <div>${modulo.html}</div>
+            <div class="flex justify-between mt-8 pt-6 border-t">
+                <button onclick="moduloAnterior()" class="px-6 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 transition">← Anterior</button>
+                <button onclick="completarModulo('${moduloId}')" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                    ${moduloId === 'm9' ? '🎉 Finalizar' : 'Continuar →'}
+                </button>
+            </div>
+        </section>
+    `;
+    
+    actualizarNavegacion();
+    cargarRespuestasPrevias(moduloId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function actualizarNavegacion() {
+    Object.keys(MODULOS_DATA).forEach(id => {
+        const btn = document.getElementById(`nav-${id}`);
+        if (btn) {
+            btn.classList.remove('bg-blue-100', 'border-l-4', 'border-blue-600', 'font-semibold');
+            if (id === estadoFormulario.modulo_actual) {
+                btn.classList.add('bg-blue-100', 'border-l-4', 'border-blue-600', 'font-semibold');
+            }
+        }
+    });
+}
+
+function handleRespuesta(preguntaId, valor) {
+    estadoFormulario.respuestas[preguntaId] = valor;
+    
+    // Lógica condicional M0
+    if (preguntaId === 'm0_p1' && valor === 'no') {
+        document.getElementById('cond_m0_p1').innerHTML = `
+            <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded fade-in">
+                <label class="block text-sm font-medium mb-2">📝 CORRECCIÓN: Explica el modelo correcto:</label>
+                <textarea id="m0_p1_correccion" rows="3" class="w-full p-3 border-2 rounded-lg" 
+                          placeholder="Describe el modelo real..." 
+                          onchange="handleRespuesta('m0_p1_correccion', this.value)"></textarea>
+            </div>
+        `;
+    } else if (preguntaId === 'm0_p1' && valor === 'si') {
+        document.getElementById('cond_m0_p1').innerHTML = '';
+    }
+    
+    if (preguntaId === 'm0_p2' && valor === 'no') {
+        document.getElementById('cond_m0_p2').innerHTML = `
+            <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded fade-in">
+                <label class="block text-sm font-medium mb-2">¿Qué % estimas sin intención empresarial?</label>
+                <select onchange="handleRespuesta('m0_p2_pct', this.value)" class="w-full p-3 border-2 rounded-lg">
+                    <option value="">Selecciona...</option>
+                    <option value="<5%"><5%</option>
+                    <option value="5-15%">5-15%</option>
+                    <option value="15-30%">15-30%</option>
+                    <option value=">30%">>30%</option>
+                </select>
+            </div>
+        `;
+    } else if (preguntaId === 'm0_p2' && valor === 'si') {
+        document.getElementById('cond_m0_p2').innerHTML = '';
+    }
+    
+    // Lógica condicional M2 - Investor + Comisión
+    if (preguntaId === 'm2_claim3_comision' && valor === 'si') {
+        const verif = estadoFormulario.respuestas['m2_claim3_verif'] || '';
+        let riesgo = '';
+        if (verif === 'no') riesgo = '🔴 RIESGO MUY ALTO';
+        else if (verif === 'curamos') riesgo = '🟡 RIESGO MEDIO';
+        else if (verif === 'verificamos') riesgo = '🔴 RIESGO ALTO';
+        
+        document.getElementById('cond_m2_c3').innerHTML = `
+            <div class="p-4 bg-red-50 border-l-4 border-red-600 rounded fade-in">
+                <div class="flex items-start">
+                    <div class="text-2xl mr-3">⚠️</div>
+                    <div>
+                        <h4 class="font-bold text-red-900 mb-2">ALERTA CRÍTICA: Posible Regulación SFC</h4>
+                        <div class="text-red-800 text-sm mb-3">
+                            Cobrar comisión por conectar startups-inversores puede constituir intermediación financiera regulada.<br><br>
+                            <strong>Tu configuración: ${riesgo}</strong>
+                        </div>
+                        <button onclick="mostrarAlerta({tipo:'error',titulo:'Consulta SFC Requerida',mensaje:'Recomendamos consultar abogado especializado antes de lanzar con comisión.'})" 
+                                class="px-3 py-1 text-sm rounded bg-red-600 text-white">
+                            Más info
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (preguntaId === 'm2_claim3_comision' && valor === 'no') {
+        document.getElementById('cond_m2_c3').innerHTML = '';
+    }
+    
+    guardarProgreso();
+}
+
+function completarModulo(moduloId) {
+    // Validación M0
+    if (moduloId === 'm0') {
+        const p1 = estadoFormulario.respuestas['m0_p1'];
+        const p2 = estadoFormulario.respuestas['m0_p2'];
+        const p3 = estadoFormulario.respuestas['m0_p3'];
+        
+        if (p1 === 'no' || p2 === 'no' || p3 === 'no') {
+            mostrarAlerta({
+                tipo: 'warning',
+                titulo: '⚠️ PAUSAR - Desalineación Detectada',
+                mensaje: 'Detectamos desalineación en entendimiento. Recomendamos llamada de 15 min para alinear antes de continuar.'
+            });
+            return;
+        }
+    }
+    
+    if (!estadoFormulario.modulos_completados.includes(moduloId)) {
+        estadoFormulario.modulos_completados.push(moduloId);
+    }
+    
+    const siguiente = `m${parseInt(moduloId.slice(1)) + 1}`;
+    if (MODULOS_DATA[siguiente]) {
+        navegarModulo(siguiente);
+    } else {
+        mostrarAlerta({
+            tipo: 'success',
+            titulo: '🎉 ¡Completado!',
+            mensaje: 'Has terminado todos los módulos. Descarga tu reporte en PDF.'
+        });
+    }
+    
+    actualizarProgreso();
+    guardarProgreso();
+}
+
+function moduloAnterior() {
+    const actual = estadoFormulario.modulo_actual;
+    if (!actual) return mostrarDashboard();
+    
+    const num = parseInt(actual.slice(1));
+    if (num > 0) {
+        navegarModulo(`m${num - 1}`);
+    } else {
+        mostrarDashboard();
+    }
+}
+
+function toggleCollapsible(id) {
+    const elem = document.getElementById(id);
+    const icon = document.getElementById(`icon_${id}`);
+    if (elem.classList.contains('expanded')) {
+        elem.classList.remove('expanded');
+        if (icon) icon.textContent = '▼';
+    } else {
+        elem.classList.add('expanded');
+        if (icon) icon.textContent = '▲';
+    }
+}
+
+function actualizarProgreso() {
+    const total = Object.keys(MODULOS_DATA).length;
+    const completados = estadoFormulario.modulos_completados.length;
+    const pct = Math.round((completados / total) * 100);
+    
+    document.getElementById('progress-bar').style.width = `${pct}%`;
+    document.getElementById('progress-text').textContent = `${pct}% (${completados}/${total})`;
+    document.getElementById('completados').textContent = completados;
+    document.getElementById('pendientes').textContent = total - completados;
+}
+
+function mostrarAlerta(config) {
+    const modal = document.getElementById('alert-modal');
+    const iconos = { 'error': '🔴', 'warning': '⚠️', 'success': '✅', 'info': 'ℹ️' };
+    
+    document.getElementById('alert-icon').textContent = iconos[config.tipo] || 'ℹ️';
+    document.getElementById('alert-title').textContent = config.titulo;
+    document.getElementById('alert-message').innerHTML = config.mensaje;
+    document.getElementById('alert-actions').innerHTML = `
+        <button onclick="cerrarModal()" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Cerrar</button>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('alert-modal').classList.add('hidden');
+}
+
+function guardarProgreso() {
+    localStorage.setItem('niilo_formulario_v3', JSON.stringify(estadoFormulario));
+}
+
+function cargarEstadoGuardado() {
+    const guardado = localStorage.getItem('niilo_formulario_v3');
+    if (guardado) {
+        try {
+            estadoFormulario = JSON.parse(guardado);
+        } catch (e) {}
+    }
+}
+
+function cargarRespuestasPrevias(moduloId) {
+    Object.entries(estadoFormulario.respuestas).forEach(([id, valor]) => {
+        const input = document.querySelector(`[name="${id}"][value="${valor}"]`) || document.getElementById(id);
+        if (input) {
+            if (input.type === 'radio') input.checked = true;
+            else input.value = valor;
+        }
+    });
+}
+
+function iniciarAutoguardado() {
+    setInterval(guardarProgreso, 30000);
+}
+
+function exportarPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    let y = 20;
+    doc.setFontSize(20);
+    doc.text('Niilo - Reporte Entendimiento Operativo', 20, y);
+    y += 15;
+    
+    doc.setFontSize(12);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, 20, y);
+    y += 10;
+    
+    const completados = estadoFormulario.modulos_completados.length;
+    const total = Object.keys(MODULOS_DATA).length;
+    doc.text(`Progreso: ${completados}/${total} módulos (${Math.round(completados/total*100)}%)`, 20, y);
+    y += 15;
+    
+    doc.setFontSize(14);
+    doc.text('Respuestas:', 20, y);
+    y += 10;
+    
+    doc.setFontSize(10);
+    Object.entries(estadoFormulario.respuestas).forEach(([pregunta, respuesta]) => {
+        if (y > 270) {
+            doc.addPage();
+            y = 20;
+        }
+        const texto = `${pregunta}: ${respuesta}`;
+        doc.text(texto.substring(0, 80), 20, y);
+        y += 7;
+    });
+    
+    doc.save(`niilo_reporte_${Date.now()}.pdf`);
+    mostrarAlerta({ tipo: 'success', titulo: '✅ PDF Generado', mensaje: 'El reporte ha sido descargado exitosamente.' });
+}
+    </script>
+</body>
+</html>
