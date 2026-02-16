@@ -44,6 +44,9 @@
                     <button onclick="exportarPDF()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                         📄 Exportar PDF
                     </button>
+                    <button onclick="enviarRespuestas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+       ✅ Enviar
+   </button>
                 </div>
             </div>
             
@@ -818,6 +821,10 @@ const MODULOS_DATA = {
                 <button onclick="navegarModulo('dashboard')" class="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition">
                     🏠 Volver al Inicio
                 </button>
+
+                <button onclick="enviarRespuestas()" class="px-8 py-4 bg-purple-600 text-white text-lg font-semibold rounded-lg hover:bg-purple-700 transition">
+       ✅ Finalizar y Enviar a John
+   </button>
             </div>
         `
     }
@@ -1179,6 +1186,61 @@ function exportarPDF() {
     
     doc.save(`niilo_reporte_${Date.now()}.pdf`);
     mostrarAlerta({ tipo: 'success', titulo: '✅ PDF Generado', mensaje: 'El reporte ha sido descargado exitosamente.' });
+}
+
+async function enviarRespuestas() {
+    // Mostrar loading
+    const modalHTML = `
+        <div id="loading-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;">
+            <div style="background:white;padding:40px;border-radius:12px;text-align:center;">
+                <div style="font-size:48px;margin-bottom:20px;">⏳</div>
+                <h3 style="margin:0 0 10px 0;">Enviando respuestas...</h3>
+                <p style="color:#666;margin:0;">Espera un momento</p>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const datos = {
+        cliente: "Camila - Niilo",
+        fecha: new Date().toLocaleString('es-CO'),
+        progreso: `${estadoFormulario.modulos_completados.length}/${Object.keys(MODULOS_DATA).length} módulos`,
+        respuestas: JSON.stringify(estadoFormulario.respuestas, null, 2)
+    };
+    
+    // REEMPLAZA CON TU URL DE FORMSPREE
+    const formspreeURL = "https://formspree.io/f/xpqjdgor";
+    
+    try {
+        const response = await fetch(formspreeURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(datos)
+        });
+        
+        // Cerrar loading
+        document.getElementById('loading-modal').remove();
+        
+        if (response.ok) {
+            mostrarAlerta({ 
+                tipo: 'success', 
+                titulo: '✅ ¡Enviado!', 
+                mensaje: 'Tus respuestas fueron enviadas correctamente. John las recibirá por email en breve.' 
+            });
+        } else {
+            throw new Error('Error en el envío');
+        }
+        
+    } catch (error) {
+        document.getElementById('loading-modal')?.remove();
+        mostrarAlerta({ 
+            tipo: 'error', 
+            titulo: '❌ Error', 
+            mensaje: 'Hubo un problema al enviar. Por favor usa el botón "Exportar PDF" y envíaselo a John por WhatsApp.' 
+        });
+    }
 }
     </script>
 </body>
